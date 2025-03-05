@@ -22,26 +22,41 @@ public:
     MainWindow( QWidget* parent = nullptr );
     ~MainWindow();
 
-private:
+private: // init
 
-    Ui::MainWindow* ui;
+    void init();
 
-private:
+private: // TFS
+
+    ManagerTFS* m_TFS;
+
+    void cloneCurrent();
+
+private: // Config
 
     ConfigTFS config;
-    ManagerTFS* m_TFS;
 
     void readConfig();
     void saveConfig();
 
-    void checkTfsConnection();
+private: // Tree
+
+    void reloadTree();
 
     void selectItem( QTreeWidgetItem* item, QTreeWidgetItem*  );
     void expantNode( QTreeWidgetItem* item, int );
-
     void createTreeItems( QTreeWidgetItem* item, const QStringList& childTextList );
+
+private: // Tools
+
     QPixmap icon( const QString& name );
     int fileType( const QString& name ) const;
+
+private: // UI
+
+    Ui::MainWindow* ui;
+
+    void createToolBar();
 
 protected:
 

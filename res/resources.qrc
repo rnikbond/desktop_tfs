@@ -4,5 +4,7 @@
         <file>folder.png</file>
         <file>eye_close.png</file>
         <file>eye_open.png</file>
+        <file>update.png</file>
+        <file>save.png</file>
     </qresource>
 </RCC>

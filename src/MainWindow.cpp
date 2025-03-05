@@ -1,6 +1,7 @@
 //----------------------------------------
 #include <QTimer>
 #include <QScreen>
+#include <QToolBar>
 #include <QProcess>
 #include <QSettings>
 #include <QMessageBox>
@@ -14,14 +15,14 @@
 #include "ui_MainWindow.h"
 //----------------------------------------
 enum CustomRoles {
-    LoadRole    = Qt::UserRole + 1,
-    ItemTypeRole,
-    TFSPathRole ,
+    LoadRole    = Qt::UserRole + 1, ///< Признак закгрузки содержимого
+    ItemTypeRole,                   ///< Тип элемента
+    TFSPathRole ,                   ///< Путь к элементу в tfs
 };
 //----------------------------------------
 enum FileTypes {
-    File  ,
-    Folder,
+    File  , ///< Файл
+    Folder, ///< Директория
 };
 //----------------------------------------
 
@@ -29,6 +30,7 @@ MainWindow::MainWindow( QWidget* parent ) : QMainWindow(parent), ui(new Ui::Main
 {
     ui->setupUi(this);
     setWindowTitle( tr("Клиент TFS") );
+    createToolBar();
 
     m_TFS = new ManagerTFS( this );
     m_TFS->init( &config );
@@ -47,7 +49,12 @@ MainWindow::~MainWindow() {
 }
 //----------------------------------------------------------------------------------------------------------
 
-void MainWindow::checkTfsConnection() {
+void MainWindow::reloadTree() {
+
+    ui->treeWidget->blockSignals( true );
+    ui->treeWidget->clear();
+    ui->folderList->clear();
+    ui->treeWidget->blockSignals( false );
 
     m_TFS->entriesDir( "$/" );
     if( m_TFS->m_error_code != 0 ) {
@@ -55,75 +62,9 @@ void MainWindow::checkTfsConnection() {
         return;
     }
 
+    ui->treeWidget->blockSignals( true );
     createTreeItems( nullptr, m_TFS->m_result );
-}
-//----------------------------------------------------------------------------------------------------------
-
-void MainWindow::createTreeItems( QTreeWidgetItem* item, const QStringList& names ) {
-
-    QString parentPath = "$";
-    if( item != nullptr ) {
-        parentPath = item->data(0, TFSPathRole).toString();
-    }
-
-    QList<QTreeWidgetItem*> items;
-
-    for( const QString& name : names ) {
-
-        QString path = parentPath + "/" + name;
-
-        QTreeWidgetItem* newItem = new QTreeWidgetItem;
-        newItem->setText( 0, name       );
-        newItem->setIcon( 0, icon(name) );
-        newItem->setData( 0, ItemTypeRole, fileType(name) );
-        newItem->setData( 0, TFSPathRole, path );
-        newItem->setData( 0, Qt::ToolTipRole, path );
-
-        items.append( newItem );
-    }
-
-    if( item == nullptr ) {
-        ui->treeWidget->addTopLevelItems( items );
-    } else {
-        item->addChildren( items );
-    }
-}
-//----------------------------------------------------------------------------------------------------------
-
-QPixmap MainWindow::icon( const QString& name ) {
-
-    if( fileType(name) == Folder ) {
-        return QPixmap(":/folder.png");
-    }
-
-    QString ext;
-    int lastPoint = name.lastIndexOf(".");
-    if( lastPoint >= 0 && lastPoint < name.length() ) {
-        ext = name.right( name.length() - lastPoint );
-    }
-
-    QTemporaryFile* tmpFile = new QTemporaryFile( this );
-    tmpFile->setFileTemplate( QString("XXXXXX%1").arg(ext) );
-    tmpFile->open();
-    tmpFile->close();
-
-    const QSize imageSize( 64, 64 );
-
-    QFileIconProvider* IconProvider = new QFileIconProvider();
-    QPixmap image = IconProvider->icon(tmpFile->fileName()).pixmap(imageSize);
-    delete IconProvider;
-
-    if( image.isNull() ) {
-        image = style()->standardIcon(QStyle::SP_FileIcon).pixmap(imageSize);
-    }
-
-    return image;
-}
-//----------------------------------------------------------------------------------------------------------
-
-int MainWindow::fileType( const QString& name ) const {
-
-    return (name.indexOf('.') < 1) ? Folder : File;
+    ui->treeWidget->blockSignals( false );
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -175,6 +116,43 @@ void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
 }
 //----------------------------------------------------------------------------------------------------------
 
+void MainWindow::createTreeItems( QTreeWidgetItem* item, const QStringList& names ) {
+
+    QString parentPath = "$";
+    if( item != nullptr ) {
+        parentPath = item->data(0, TFSPathRole).toString();
+    }
+
+    QList<QTreeWidgetItem*> items;
+
+    for( const QString& name : names ) {
+
+        QString path = parentPath + "/" + name;
+
+        QTreeWidgetItem* newItem = new QTreeWidgetItem;
+        newItem->setText( 0, name       );
+        newItem->setIcon( 0, icon(name) );
+        newItem->setData( 0, ItemTypeRole, fileType(name) );
+        newItem->setData( 0, TFSPathRole, path );
+        newItem->setData( 0, Qt::ToolTipRole, path );
+
+        items.append( newItem );
+    }
+
+    if( item == nullptr ) {
+        ui->treeWidget->addTopLevelItems( items );
+    } else {
+        item->addChildren( items );
+    }
+}
+//----------------------------------------------------------------------------------------------------------
+
+void MainWindow::cloneCurrent() {
+
+
+}
+//----------------------------------------------------------------------------------------------------------
+
 void MainWindow::readConfig() {
 
     QSettings conf("tfs.conf", QSettings::IniFormat);
@@ -203,7 +181,7 @@ void MainWindow::readConfig() {
         saveConfig();
     }
 
-    checkTfsConnection();
+    reloadTree();
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -227,6 +205,66 @@ void MainWindow::saveConfig() {
 }
 //----------------------------------------------------------------------------------------------------------
 
+QPixmap MainWindow::icon( const QString& name ) {
+
+    if( fileType(name) == Folder ) {
+        return QPixmap(":/folder.png");
+    }
+
+    QString ext;
+    int lastPoint = name.lastIndexOf(".");
+    if( lastPoint >= 0 && lastPoint < name.length() ) {
+        ext = name.right( name.length() - lastPoint );
+    }
+
+    QTemporaryFile* tmpFile = new QTemporaryFile( this );
+    tmpFile->setFileTemplate( QString("XXXXXX%1").arg(ext) );
+    tmpFile->open();
+    tmpFile->close();
+
+    const QSize imageSize( 64, 64 );
+
+    QFileIconProvider* IconProvider = new QFileIconProvider();
+    QPixmap image = IconProvider->icon(tmpFile->fileName()).pixmap(imageSize);
+    delete IconProvider;
+
+    if( image.isNull() ) {
+        image = style()->standardIcon(QStyle::SP_FileIcon).pixmap(imageSize);
+    }
+
+    return image;
+}
+//----------------------------------------------------------------------------------------------------------
+
+int MainWindow::fileType( const QString& name ) const {
+
+    return (name.indexOf('.') < 1) ? Folder : File;
+}
+//----------------------------------------------------------------------------------------------------------
+
+void MainWindow::init() {
+
+    readConfig();
+    reloadTree();
+}
+//----------------------------------------------------------------------------------------------------------
+
+void MainWindow::createToolBar() {
+
+    QAction* reloadAction = new QAction( QIcon(":/update.png"), tr("Обновить") );
+    QAction* cloneAction  = new QAction( QIcon(":/save.png"  ), tr("Получить") );
+
+    QToolBar* toolBar = new QToolBar;
+    toolBar->addAction( reloadAction );
+    toolBar->addAction( cloneAction  );
+
+    connect( reloadAction, &QAction::triggered, this, &MainWindow::reloadTree   );
+    connect( cloneAction , &QAction::triggered, this, &MainWindow::cloneCurrent );
+
+    addToolBar( toolBar );
+}
+//----------------------------------------------------------------------------------------------------------
+
 void MainWindow::showEvent( QShowEvent* event ) {
 
     QRect rect  = QGuiApplication::primaryScreen()->geometry();
@@ -236,7 +274,7 @@ void MainWindow::showEvent( QShowEvent* event ) {
     move(center);
 
     QMainWindow::showEvent( event );
-    QTimer::singleShot( 0, this, &MainWindow::readConfig );
+    QTimer::singleShot( 0, this, &MainWindow::init );
 }
 //----------------------------------------------------------------------------------------------------------
 
