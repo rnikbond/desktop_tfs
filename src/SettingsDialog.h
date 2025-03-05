@@ -28,6 +28,8 @@ private:
 
 private:
 
+    void selectBin();
+
     void save   ();
     void restore();
 };

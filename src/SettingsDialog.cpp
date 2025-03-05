@@ -1,5 +1,6 @@
 //----------------------------------------
 #include <QDebug>
+#include <QFileDialog>
 //----------------------------------------
 #include "SettingsDialog.h"
 #include "ui_SettingsDialog.h"
@@ -11,13 +12,25 @@ SettingsDialog::SettingsDialog( QWidget* parent ) : QDialog(parent), ui(new Ui::
 
     m_Config = nullptr;
 
-    connect( ui->buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::save );
+    connect( ui->buttonBox    , &QDialogButtonBox::accepted, this, &SettingsDialog::save      );
+    connect( ui->binPathButton, &QToolButton     ::clicked , this, &SettingsDialog::selectBin );
 }
 //----------------------------------------------------------------------------------------------------------
 
 SettingsDialog::~SettingsDialog() {
 
     delete ui;
+}
+//----------------------------------------------------------------------------------------------------------
+
+void SettingsDialog::selectBin() {
+
+    QString path = QFileDialog::getOpenFileName( this, "Программа TF", m_Config->binPath.isEmpty() ? "C:/" : m_Config->binPath, "*.exe" );
+    if( path.isEmpty() ) {
+        return;
+    }
+
+    ui->binPathEdit->setText( QDir::fromNativeSeparators(path) );
 }
 //----------------------------------------------------------------------------------------------------------
 

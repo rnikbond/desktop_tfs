@@ -8,6 +8,8 @@
 //----------------------------------------
 namespace Ui { class MainWindow; }
 //----------------------------------------
+class QTreeWidgetItem;
+//----------------------------------------
 
 class MainWindow : public QMainWindow {
 
@@ -28,6 +30,10 @@ private:
 
     void readConfig();
     void saveConfig();
+
+    void checkTfsConnection();
+    void requestTree();
+    void expantNode( QTreeWidgetItem* item, int ) ;
 
 protected:
 
