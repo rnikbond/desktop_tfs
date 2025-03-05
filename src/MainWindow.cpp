@@ -1,9 +1,9 @@
 //----------------------------------------
 #include <QTimer>
 #include <QScreen>
-#include <QSettings>
 #include <QProcess>
-#include <QTextCodec>
+#include <QSettings>
+#include <QMessageBox>
 #include <QTemporaryFile>
 #include <QGuiApplication>
 #include <QFileIconProvider>
@@ -16,6 +16,7 @@
 enum CustomRoles {
     LoadRole    = Qt::UserRole + 1,
     ItemTypeRole,
+    TFSPathRole ,
 };
 //----------------------------------------
 enum FileTypes {
@@ -27,11 +28,15 @@ enum FileTypes {
 MainWindow::MainWindow( QWidget* parent ) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    setWindowTitle( tr("Клиент TFS") );
+
+    m_TFS = new ManagerTFS( this );
+    m_TFS->init( &config );
 
     ui->treeWidget->setColumnCount( 1 );
     ui->treeWidget->header()->hide();
 
-    connect( ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::expantNode );
+    connect( ui->treeWidget, &QTreeWidget::itemDoubleClicked , this, &MainWindow::expantNode );
     connect( ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::selectItem );
 }
 //----------------------------------------------------------------------------------------------------------
@@ -44,58 +49,35 @@ MainWindow::~MainWindow() {
 
 void MainWindow::checkTfsConnection() {
 
-    QStringList rootDirs = whatsInFolder("$/");
-    createTreeItems( nullptr, rootDirs );
-}
-//----------------------------------------------------------------------------------------------------------
-
-QStringList MainWindow::whatsInFolder( const QString& folder ) {
-
-#ifdef WIN32
-    QString separator = "\r\n";
-#else
-    QString separator = "\n";
-#endif
-
-    QStringList args = { "dir", QString("-collection:%1").arg(config.collection), folder };
-
-    QProcess tfs_process;
-    tfs_process.setProcessChannelMode( QProcess::MergedChannels );
-    tfs_process.start( config.binPath, args );
-    tfs_process.waitForFinished();
-
-    QByteArray tf_output = tfs_process.readAllStandardOutput();
-    QStringList subdirsList =QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split( separator, Qt::SkipEmptyParts );
-
-    qDebug() << "exitCode  : " << tfs_process.exitCode();
-    qDebug() << "exitStatus: " << tfs_process.exitStatus();
-    qDebug() << subdirsList;
-
-    subdirsList.removeLast();
-
-    for( int i = 0; i < subdirsList.count(); i++ ) {
-        QString dirName = subdirsList.at(i);
-        if( dirName.contains(":") ) {
-            subdirsList.removeAt( i );
-            i--;
-        } else {
-             subdirsList[i] = subdirsList[i].remove("$");
-        }
+    m_TFS->entriesDir( "$/" );
+    if( m_TFS->m_error_code != 0 ) {
+        QMessageBox::critical( this, tr("Ошибка"), m_TFS->m_error_text );
+        return;
     }
 
-    return subdirsList;
+    createTreeItems( nullptr, m_TFS->m_result );
 }
 //----------------------------------------------------------------------------------------------------------
 
 void MainWindow::createTreeItems( QTreeWidgetItem* item, const QStringList& names ) {
 
+    QString parentPath = "$";
+    if( item != nullptr ) {
+        parentPath = item->data(0, TFSPathRole).toString();
+    }
+
     QList<QTreeWidgetItem*> items;
 
     for( const QString& name : names ) {
+
+        QString path = parentPath + "/" + name;
+
         QTreeWidgetItem* newItem = new QTreeWidgetItem;
         newItem->setText( 0, name       );
         newItem->setIcon( 0, icon(name) );
         newItem->setData( 0, ItemTypeRole, fileType(name) );
+        newItem->setData( 0, TFSPathRole, path );
+        newItem->setData( 0, Qt::ToolTipRole, path );
 
         items.append( newItem );
     }
@@ -105,24 +87,6 @@ void MainWindow::createTreeItems( QTreeWidgetItem* item, const QStringList& name
     } else {
         item->addChildren( items );
     }
-}
-//----------------------------------------------------------------------------------------------------------
-
-QString MainWindow::fullPathTo( QTreeWidgetItem* item ) {
-
-    QString path = item->text(0);
-
-    QTreeWidgetItem* item_parent = item->parent();
-    while( item_parent != nullptr ) {
-        if( !path.isEmpty() ) {
-            path.prepend( "/" );
-        }
-        path.prepend( item_parent->text(0) );
-        item_parent = item_parent->parent();
-    }
-    path.prepend( "$/" );
-
-    return path;
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -196,9 +160,15 @@ void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
         return;
     }
 
-    QString path = fullPathTo( item );
-    QStringList names = whatsInFolder( path );
-    createTreeItems( item, names );
+    QString path = item->data(0, TFSPathRole).toString();
+
+    m_TFS->entriesDir( path );
+    if( m_TFS->m_error_code != 0 ) {
+        QMessageBox::critical( this, tr("Ошибка"), m_TFS->m_error_text );
+        return;
+    }
+
+    createTreeItems( item, m_TFS->m_result );
 
     item->setData( 0, LoadRole, true );
     ui->treeWidget->expandItem( item );

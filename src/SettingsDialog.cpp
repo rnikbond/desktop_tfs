@@ -1,19 +1,38 @@
 //----------------------------------------
 #include <QDebug>
+#include <QAction>
 #include <QFileDialog>
 //----------------------------------------
 #include "SettingsDialog.h"
 #include "ui_SettingsDialog.h"
 //----------------------------------------
+#ifdef WIN32
+ #define BIN_FILTER     "*.exe"
+ #define EXAMPLE_TF_BIN "/home/user/TEE-CLC-xx.xxx.x/tf"
+#else
+ #define BIN_FILTER ""
+ #define EXAMPLE_TF_BIN "/home/user/TEE-CLC-xx.xxx.x/tf"
+#endif
+//----------------------------------------
 
 SettingsDialog::SettingsDialog( QWidget* parent ) : QDialog(parent), ui(new Ui::SettingsDialog)
 {
     ui->setupUi(this);
+    setWindowTitle( tr("Настройка") );
 
     m_Config = nullptr;
 
-    connect( ui->buttonBox    , &QDialogButtonBox::accepted, this, &SettingsDialog::save      );
-    connect( ui->binPathButton, &QToolButton     ::clicked , this, &SettingsDialog::selectBin );
+    ui->binPathEdit   ->setPlaceholderText( EXAMPLE_TF_BIN );
+    ui->collectionEdit->setPlaceholderText("http://<hostname>:<port>/<collection>");
+
+    QAction* viewPasswordAction = new QAction( QIcon(":/eye_open.png"), "");
+    ui->passwordEdit->addAction( viewPasswordAction, QLineEdit::TrailingPosition );
+
+    changePasswordVisibility();
+
+    connect( ui->buttonBox     , &QDialogButtonBox::accepted , this, &SettingsDialog::save                     );
+    connect( ui->binPathButton , &QToolButton     ::clicked  , this, &SettingsDialog::selectBin                );
+    connect( viewPasswordAction, &QAction         ::triggered, this, &SettingsDialog::changePasswordVisibility );
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -25,22 +44,8 @@ SettingsDialog::~SettingsDialog() {
 
 void SettingsDialog::selectBin() {
 
-    QString filter;
-    QString dir = m_Config->binPath;
-
-#ifdef WIN32
-    filter = "*.exe";
-#endif
-
-    if( dir.isEmpty() ) {
-#ifdef WIN32
-        dir = "C:/";
-#else
-        dir = QDir::homePath();
-#endif
-    }
-
-    QString path = QFileDialog::getOpenFileName( this, tr("Программа TF"), dir, filter );
+    QString dir = m_Config->binPath.isEmpty() ? QDir::homePath() : m_Config->binPath;
+    QString path = QFileDialog::getOpenFileName( this, tr("Программа TF"), dir, BIN_FILTER );
     if( path.isEmpty() ) {
         return;
     }
@@ -49,10 +54,19 @@ void SettingsDialog::selectBin() {
 }
 //----------------------------------------------------------------------------------------------------------
 
-void SettingsDialog::setConf( ConfigTFS* conf ) {
+void SettingsDialog::changePasswordVisibility() {
 
-    m_Config = conf;
-    restore();
+    QAction* viewPasswordAction = ui->passwordEdit->actions().last();
+
+    if( ui->passwordEdit->echoMode() == QLineEdit::PasswordEchoOnEdit) {
+        viewPasswordAction->setIcon( QIcon(":/eye_close.png") );
+        viewPasswordAction->setToolTip( tr("Скрыть пароль") );
+        ui->passwordEdit->setEchoMode( QLineEdit::Normal );
+    } else {
+        viewPasswordAction->setIcon( QIcon(":/eye_open.png") );
+        viewPasswordAction->setToolTip( tr("Показать пароль") );
+        ui->passwordEdit->setEchoMode( QLineEdit::PasswordEchoOnEdit );
+    }
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -81,5 +95,12 @@ void SettingsDialog::restore() {
     // Аутентификация
     ui->loginEdit   ->setText( m_Config->creds.login    );
     ui->passwordEdit->setText( m_Config->creds.password );
+}
+//----------------------------------------------------------------------------------------------------------
+
+void SettingsDialog::setConf( ConfigTFS* conf ) {
+
+    m_Config = conf;
+    restore();
 }
 //----------------------------------------------------------------------------------------------------------

@@ -4,6 +4,8 @@
 //----------------------------------------
 #include <QMainWindow>
 //----------------------------------------
+#include "ManagerTFS.h"
+//----------------------------------------
 #include "conf.h"
 //----------------------------------------
 namespace Ui { class MainWindow; }
@@ -27,6 +29,7 @@ private:
 private:
 
     ConfigTFS config;
+    ManagerTFS* m_TFS;
 
     void readConfig();
     void saveConfig();
@@ -37,13 +40,8 @@ private:
     void expantNode( QTreeWidgetItem* item, int );
 
     void createTreeItems( QTreeWidgetItem* item, const QStringList& childTextList );
-    QString fullPathTo( QTreeWidgetItem* item );
     QPixmap icon( const QString& name );
     int fileType( const QString& name ) const;
-
-private:
-
-    QStringList whatsInFolder( const QString& folder );
 
 protected:
 
