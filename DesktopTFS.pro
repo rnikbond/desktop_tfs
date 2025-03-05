@@ -5,8 +5,12 @@ CONFIG += c++17
 INCLUDEPATH += src
 
 SOURCES += main.cpp \
-           src/MainWindow.cpp
+           src/MainWindow.cpp \
+           src/SettingsDialog.cpp
 
-HEADERS += src/MainWindow.h
+HEADERS += src/MainWindow.h \
+    src/SettingsDialog.h \
+    src/conf.h
 
-FORMS += src/MainWindow.ui
+FORMS += src/MainWindow.ui \
+    src/SettingsDialog.ui
