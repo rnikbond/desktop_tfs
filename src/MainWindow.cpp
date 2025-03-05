@@ -3,6 +3,8 @@
 #include <QSettings>
 #include <QProcess>
 #include <QTextCodec>
+#include <QTemporaryFile>
+#include <QFileIconProvider>
 //----------------------------------------
 #include "SettingsDialog.h"
 //----------------------------------------
@@ -47,11 +49,12 @@ QStringList MainWindow::whatsInFolder( const QString& folder ) {
     tfs_process.waitForFinished();
 
     QByteArray tf_output = tfs_process.readAllStandardOutput();
-    QStringList subdirsList =QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split( "\r\n" );;
+    QStringList subdirsList =QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split( "\r\n", Qt::SkipEmptyParts );
+    subdirsList.removeLast();
 
     for( int i = 0; i < subdirsList.count(); i++ ) {
         QString dirName = subdirsList.at(i);
-        if( !dirName.startsWith("$") || dirName.startsWith("$/") ) {
+        if( dirName.contains(":") ) {
             subdirsList.removeAt( i );
             i--;
         } else {
@@ -69,7 +72,9 @@ void MainWindow::createTreeItems( QTreeWidgetItem* item, const QStringList& name
 
     for( const QString& name : names ) {
         QTreeWidgetItem* newItem = new QTreeWidgetItem;
-        newItem->setText( 0, name );
+        newItem->setText( 0, name       );
+        newItem->setIcon( 0, icon(name) );
+
         items.append( newItem );
     }
 
@@ -96,6 +101,38 @@ QString MainWindow::fullPathTo( QTreeWidgetItem* item ) {
     path.prepend( "$/" );
 
     return path;
+}
+//----------------------------------------------------------------------------------------------------------
+
+QPixmap MainWindow::icon( const QString& name ) {
+
+    bool isFolder = name.indexOf('.') < 1;
+    if( isFolder ) {
+        return QPixmap(":/folder.png");
+    }
+
+    QString ext;
+    int lastPoint = name.lastIndexOf(".");
+    if( lastPoint >= 0 && lastPoint < name.length() ) {
+        ext = name.right( name.length() - lastPoint );
+    }
+
+    QTemporaryFile* tmpFile = new QTemporaryFile( this );
+    tmpFile->setFileTemplate( QString("XXXXXX%1").arg(ext) );
+    tmpFile->open();
+    tmpFile->close();
+
+    const QSize imageSize( 64, 64 );
+
+    QFileIconProvider* IconProvider = new QFileIconProvider();
+    QPixmap image = IconProvider->icon(tmpFile->fileName()).pixmap(imageSize);
+    delete IconProvider;
+
+    if( image.isNull() ) {
+        image = style()->standardIcon(QStyle::SP_FileIcon).pixmap(imageSize);
+    }
+
+    return image;
 }
 //----------------------------------------------------------------------------------------------------------
 

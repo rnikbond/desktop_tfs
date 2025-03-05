@@ -14,3 +14,6 @@ HEADERS += src/MainWindow.h \
 
 FORMS += src/MainWindow.ui \
     src/SettingsDialog.ui
+
+RESOURCES += \
+    res/resources.qrc

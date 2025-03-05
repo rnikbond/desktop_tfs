@@ -36,6 +36,7 @@ private:
 
     void createTreeItems( QTreeWidgetItem* item, const QStringList& childTextList );
     QString fullPathTo( QTreeWidgetItem* item );
+    QPixmap icon( const QString& name );
 private:
 
     QStringList whatsInFolder( const QString& folder );
