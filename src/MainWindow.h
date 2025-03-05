@@ -39,11 +39,12 @@ private: // Config
     void readConfig();
     void saveConfig();
 
+    void changeSettings();
+
 private: // Tree
 
     void reloadTree();
 
-    void selectItem( QTreeWidgetItem* item, QTreeWidgetItem*  );
     void expantNode( QTreeWidgetItem* item, int );
     void createTreeItems( QTreeWidgetItem* item, const QStringList& childTextList );
 
@@ -57,6 +58,7 @@ private: // UI
     Ui::MainWindow* ui;
 
     void createToolBar();
+    void appendOutput ();
 
 protected:
 

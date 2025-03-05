@@ -4,6 +4,12 @@
 //----------------------------------------
 #include "ManagerTFS.h"
 //----------------------------------------
+#ifdef WIN32
+# define SEP "\r\n"
+#else
+# define SEP "\n"
+#endif
+//----------------------------------------
 
 ManagerTFS::ManagerTFS( QObject* parent  ) : QObject(parent)
 {
@@ -17,34 +23,37 @@ void ManagerTFS::init( const ConfigTFS* cfg ) {
 }
 //----------------------------------------------------------------------------------------------------------
 
-void ManagerTFS::entriesDir( const QString& dir ) {
+void ManagerTFS::cloneDir( const QString& dir ) {
 
     clear();
 
-#ifdef WIN32
-    QString separator = "\r\n";
-#else
-    QString separator = "\n";
-#endif
+    QStringList args = { "get",
+                         dir,
+                        "-recursive",
+                         QString("-login:%1,%2"  ).arg(config->creds.login).arg(config->creds.password),
+                         QString("-collection:%1").arg(config->collection)
+                       };
+
+    execute( args );
+    if( m_error_code != 0 ) {
+        return;
+    }
+
+    qDebug() << m_result;
+}
+//----------------------------------------------------------------------------------------------------------
+
+void ManagerTFS::entriesDir( const QString& dir ) {
+
+    clear();
 
     QStringList args = { "dir",
                         QString("-login:%1,%2").arg(config->creds.login).arg(config->creds.password),
                         QString("-collection:%1").arg(config->collection),
                         dir };
 
-    QProcess tfs_process;
-    tfs_process.setProcessChannelMode( QProcess::MergedChannels );
-
-    tfs_process.start( config->binPath, args );
-    tfs_process.waitForFinished();
-
-    QByteArray tf_output = tfs_process.readAllStandardOutput();
-    m_result = QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split( separator, Qt::SkipEmptyParts );
-
-    m_error_code = tfs_process.exitCode();
+    execute( args );
     if( m_error_code != 0 ) {
-        m_error_text = m_result.join(',');
-        m_result.clear();
         return;
     }
 
@@ -59,6 +68,25 @@ void ManagerTFS::entriesDir( const QString& dir ) {
         } else {
             m_result[i] = m_result[i].remove("$");
         }
+    }
+}
+//----------------------------------------------------------------------------------------------------------
+
+void ManagerTFS::execute( const QStringList& args ) {
+
+    QProcess tfs_process;
+    tfs_process.setProcessChannelMode( QProcess::MergedChannels );
+    tfs_process.setWorkingDirectory( "/home/rnb/work/mainline" );
+    tfs_process.start( config->binPath, args );
+    tfs_process.waitForFinished();
+
+    QByteArray tf_output = tfs_process.readAllStandardOutput();
+    m_result = QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split(SEP, Qt::SkipEmptyParts);
+
+    m_error_code = tfs_process.exitCode();
+    if( m_error_code != 0 ) {
+        m_error_text = m_result.join('\n');
+        m_result.clear();
     }
 }
 //----------------------------------------------------------------------------------------------------------

@@ -32,14 +32,15 @@ MainWindow::MainWindow( QWidget* parent ) : QMainWindow(parent), ui(new Ui::Main
     setWindowTitle( tr("Клиент TFS") );
     createToolBar();
 
-    m_TFS = new ManagerTFS( this );
-    m_TFS->init( &config );
+    ui->splitter->setSizes( {300, 100} );
 
     ui->treeWidget->setColumnCount( 1 );
     ui->treeWidget->header()->hide();
 
-    connect( ui->treeWidget, &QTreeWidget::itemDoubleClicked , this, &MainWindow::expantNode );
-    connect( ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::selectItem );
+    m_TFS = new ManagerTFS( this );
+    m_TFS->init( &config );
+
+    connect( ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::expantNode );
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -52,12 +53,15 @@ MainWindow::~MainWindow() {
 void MainWindow::reloadTree() {
 
     ui->treeWidget->blockSignals( true );
+    ui->logEdit   ->clear();
     ui->treeWidget->clear();
-    ui->folderList->clear();
     ui->treeWidget->blockSignals( false );
 
     m_TFS->entriesDir( "$/" );
+    appendOutput();
+
     if( m_TFS->m_error_code != 0 ) {
+        ui->logEdit->append( QString("%1: %2").arg(m_TFS->m_error_code).arg(m_TFS->m_error_text ) );
         QMessageBox::critical( this, tr("Ошибка"), m_TFS->m_error_text );
         return;
     }
@@ -65,29 +69,6 @@ void MainWindow::reloadTree() {
     ui->treeWidget->blockSignals( true );
     createTreeItems( nullptr, m_TFS->m_result );
     ui->treeWidget->blockSignals( false );
-}
-//----------------------------------------------------------------------------------------------------------
-
-void MainWindow::selectItem( QTreeWidgetItem* item, QTreeWidgetItem* ) {
-
-    if( item->data(0, ItemTypeRole).toInt() != Folder ) {
-        return;
-    }
-
-    if( !item->data(0, LoadRole).isValid() ) {
-        expantNode( item, 0 );
-    }
-
-    ui->folderList->clear();
-
-    for( int i = 0; i < item->childCount(); i++ ) {
-
-        QTreeWidgetItem* childItem = item->child( i );
-
-        QListWidgetItem* listItem = new QListWidgetItem( ui->folderList );
-        listItem->setData( Qt::DisplayRole   , childItem->data(0, Qt::DisplayRole   ) );
-        listItem->setData( Qt::DecorationRole, childItem->data(0, Qt::DecorationRole) );
-    }
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -104,6 +85,8 @@ void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
     QString path = item->data(0, TFSPathRole).toString();
 
     m_TFS->entriesDir( path );
+    appendOutput();
+
     if( m_TFS->m_error_code != 0 ) {
         QMessageBox::critical( this, tr("Ошибка"), m_TFS->m_error_text );
         return;
@@ -112,7 +95,6 @@ void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
     createTreeItems( item, m_TFS->m_result );
 
     item->setData( 0, LoadRole, true );
-    ui->treeWidget->expandItem( item );
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -149,7 +131,28 @@ void MainWindow::createTreeItems( QTreeWidgetItem* item, const QStringList& name
 
 void MainWindow::cloneCurrent() {
 
+    QTreeWidgetItem* item = ui->treeWidget->currentItem();
+    if( item == nullptr ) {
+        return;
+    }
 
+    m_TFS->cloneDir( item->data(0, TFSPathRole).toString() );
+    appendOutput();
+}
+//----------------------------------------------------------------------------------------------------------
+
+void MainWindow::changeSettings() {
+
+    ConfigTFS confTmp = config;
+
+    SettingsDialog dialog;
+    dialog.setConf( &confTmp );
+    if( dialog.exec() != QDialog::Accepted ) {
+        return;
+    }
+
+    config = confTmp;
+    saveConfig();
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -169,25 +172,12 @@ void MainWindow::readConfig() {
     config.creds.password = conf.value( CONF_PASSWORD, "" ).toString();
 
     if( !config.isValid() ) {
-        ConfigTFS confTmp = config;
-
-        SettingsDialog dialog;
-        dialog.setConf( &confTmp );
-        if( dialog.exec() != QDialog::Accepted ) {
-            return;
-        }
-
-        config = confTmp;
-        saveConfig();
+        changeSettings();
     }
-
-    reloadTree();
 }
 //----------------------------------------------------------------------------------------------------------
 
 void MainWindow::saveConfig() {
-
-    config.print();
 
     QSettings conf("tfs.conf", QSettings::IniFormat);
 
@@ -242,6 +232,26 @@ int MainWindow::fileType( const QString& name ) const {
 }
 //----------------------------------------------------------------------------------------------------------
 
+void MainWindow::appendOutput() {
+
+    if( m_TFS->m_error_code != 0 ) {
+        QColor textColorSave = ui->logEdit->textColor();
+
+        ui->logEdit->setTextColor( Qt::red );
+
+        ui->logEdit->append( QString("Ошибка %1").arg(m_TFS->m_error_code));
+        ui->logEdit->append( m_TFS->m_error_text );
+
+        ui->logEdit->setTextColor( textColorSave );
+        return;
+    }
+
+    if( !m_TFS->m_result.isEmpty() ) {
+        ui->logEdit->append( m_TFS->m_result.join('\n') );
+    }
+}
+//----------------------------------------------------------------------------------------------------------
+
 void MainWindow::init() {
 
     readConfig();
@@ -251,15 +261,19 @@ void MainWindow::init() {
 
 void MainWindow::createToolBar() {
 
-    QAction* reloadAction = new QAction( QIcon(":/update.png"), tr("Обновить") );
-    QAction* cloneAction  = new QAction( QIcon(":/save.png"  ), tr("Получить") );
+    QAction* reloadAction   = new QAction( QIcon(":/update.png"     ), tr("Обновить" ) );
+    QAction* cloneAction    = new QAction( QIcon(":/save.png"       ), tr("Получить" ) );
+    QAction* settingsAction = new QAction( QIcon(":/customizing.png"), tr("Настройки") );
 
     QToolBar* toolBar = new QToolBar;
     toolBar->addAction( reloadAction );
     toolBar->addAction( cloneAction  );
+    toolBar->addSeparator();
+    toolBar->addAction( settingsAction );
 
-    connect( reloadAction, &QAction::triggered, this, &MainWindow::reloadTree   );
-    connect( cloneAction , &QAction::triggered, this, &MainWindow::cloneCurrent );
+    connect( reloadAction  , &QAction::triggered, this, &MainWindow::reloadTree     );
+    connect( cloneAction   , &QAction::triggered, this, &MainWindow::cloneCurrent   );
+    connect( settingsAction, &QAction::triggered, this, &MainWindow::changeSettings );
 
     addToolBar( toolBar );
 }

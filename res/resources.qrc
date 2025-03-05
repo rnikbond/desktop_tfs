@@ -6,5 +6,6 @@
         <file>eye_open.png</file>
         <file>update.png</file>
         <file>save.png</file>
+        <file>customizing.png</file>
     </qresource>
 </RCC>

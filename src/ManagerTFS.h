@@ -30,6 +30,11 @@ public:
 public:
 
     void entriesDir( const QString& dir );
+    void cloneDir  ( const QString& dir );
+
+private:
+
+    void execute( const QStringList& args );
 };
 //----------------------------------------
 
