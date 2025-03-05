@@ -32,8 +32,13 @@ private:
     void saveConfig();
 
     void checkTfsConnection();
-    void requestTree();
     void expantNode( QTreeWidgetItem* item, int ) ;
+
+    void createTreeItems( QTreeWidgetItem* item, const QStringList& childTextList );
+    QString fullPathTo( QTreeWidgetItem* item );
+private:
+
+    QStringList whatsInFolder( const QString& folder );
 
 protected:
 

@@ -9,6 +9,10 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 //----------------------------------------
+enum CustomRoles {
+    LoadRole = Qt::UserRole + 1,
+};
+//----------------------------------------
 
 MainWindow::MainWindow( QWidget* parent ) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -28,90 +32,56 @@ MainWindow::~MainWindow() {
 
 void MainWindow::checkTfsConnection() {
 
-    qDebug() << "config.binPath: " << config.binPath;
-
-   // QStringList args = { "workspaces", "-collection:http://it-tfs.decima.local:8080/tfs/KOTMI" };
-   // QStringList args = { "workfold", "-workspace:RNB", "-collection:http://it-tfs.decima.local:8080/tfs/KOTMI" };
-
-//    QStringList args = { "dir", "$/" };
-
-//    QProcess tfs_process;
-//    tfs_process.setReadChannelMode(QProcess::MergedChannels);
-//    tfs_process.start( config.binPath, args );
-
-//    //qDebug() << "error: " << tfs_process.errorString();
-//    tfs_process.waitForFinished();
-
-//    QByteArray line = tfs_process.readAllStandardOutput();
-//    QString output = QTextCodec::codecForName("cp1251")->toUnicode( line );
-//    QStringList lines = output.split( "\r\n" );
-
-//    for( QString str : lines ) {
-//        qDebug() << str;
-//    }
-
-    requestTree();
-
+    QStringList rootDirs = whatsInFolder("$/");
+    createTreeItems( nullptr, rootDirs );
 }
 //----------------------------------------------------------------------------------------------------------
 
-void MainWindow::requestTree() {
+QStringList MainWindow::whatsInFolder( const QString& folder ) {
 
-    auto dir_info = [&]( const QString& path ) {
+    QStringList args = { "dir", folder };
 
-        QStringList args = { "dir", path };
+    QProcess tfs_process;
+    tfs_process.setReadChannelMode(QProcess::MergedChannels);
+    tfs_process.start( config.binPath, args );
+    tfs_process.waitForFinished();
 
-        QProcess tfs_process;
-        tfs_process.setReadChannelMode(QProcess::MergedChannels);
-        tfs_process.start( config.binPath, args );
-        tfs_process.waitForFinished();
+    QByteArray tf_output = tfs_process.readAllStandardOutput();
+    QStringList subdirsList =QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split( "\r\n" );;
 
-        QByteArray line = tfs_process.readAllStandardOutput();
-        QString output = QTextCodec::codecForName("cp1251")->toUnicode( line );
-        QStringList lines = output.split( "\r\n" );
-
-        return lines;
-    };
-
-
-
-    QStringList rootDirs = dir_info( "$/" );
-    for( int i = 0; i < rootDirs.count(); i++ ) {
-
-        QString dirName = rootDirs.at(i);
-        if( !dirName.startsWith("$") || dirName == "$/:" ) {
-            continue;
+    for( int i = 0; i < subdirsList.count(); i++ ) {
+        QString dirName = subdirsList.at(i);
+        if( !dirName.startsWith("$") || dirName.startsWith("$/") ) {
+            subdirsList.removeAt( i );
+            i--;
+        } else {
+             subdirsList[i] = subdirsList[i].remove("$");
         }
+    }
 
-        dirName = dirName.remove("$");
+    return subdirsList;
+}
+//----------------------------------------------------------------------------------------------------------
 
-        qDebug() << dirName;
+void MainWindow::createTreeItems( QTreeWidgetItem* item, const QStringList& names ) {
 
-        QTreeWidgetItem* dirItem = new QTreeWidgetItem;
-        dirItem->setText( 0, dirName );
+    QList<QTreeWidgetItem*> items;
 
-        ui->treeWidget->addTopLevelItem( dirItem );
+    for( const QString& name : names ) {
+        QTreeWidgetItem* newItem = new QTreeWidgetItem;
+        newItem->setText( 0, name );
+        items.append( newItem );
+    }
+
+    if( item == nullptr ) {
+        ui->treeWidget->addTopLevelItems( items );
+    } else {
+        item->addChildren( items );
     }
 }
 //----------------------------------------------------------------------------------------------------------
 
-void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
-
-    auto dir_info = [&]( const QString& path ) {
-
-        QStringList args = { "dir", path };
-
-        QProcess tfs_process;
-        tfs_process.setReadChannelMode(QProcess::MergedChannels);
-        tfs_process.start( config.binPath, args );
-        tfs_process.waitForFinished();
-
-        QByteArray line = tfs_process.readAllStandardOutput();
-        QString output = QTextCodec::codecForName("cp1251")->toUnicode( line );
-        QStringList lines = output.split( "\r\n" );
-
-        return lines;
-    };
+QString MainWindow::fullPathTo( QTreeWidgetItem* item ) {
 
     QString path = item->text(0);
 
@@ -123,28 +93,23 @@ void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
         path.prepend( item_parent->text(0) );
         item_parent = item_parent->parent();
     }
-
     path.prepend( "$/" );
 
-    qDebug() << "path: " << path;
+    return path;
+}
+//----------------------------------------------------------------------------------------------------------
 
-    QStringList rootDirs = dir_info( path );
-    for( int i = 0; i < rootDirs.count(); i++ ) {
+void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
 
-        QString dirName = rootDirs.at(i);
-        if( !dirName.startsWith("$") || dirName.startsWith("$/") ) {
-            continue;
-        }
-
-        dirName = dirName.remove("$");
-
-        qDebug() << dirName;
-
-        QTreeWidgetItem* dirItem = new QTreeWidgetItem;
-        dirItem->setText( 0, dirName );
-
-        item->addChild(dirItem  );
+    if( item->data(0, LoadRole).isValid() ) {
+        return;
     }
+
+    QString path = fullPathTo( item );
+    QStringList names = whatsInFolder( path );
+    createTreeItems( item, names );
+
+    item->setData( 0, LoadRole, true );
 }
 //----------------------------------------------------------------------------------------------------------
 
