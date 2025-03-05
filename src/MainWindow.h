@@ -32,11 +32,15 @@ private:
     void saveConfig();
 
     void checkTfsConnection();
-    void expantNode( QTreeWidgetItem* item, int ) ;
+
+    void selectItem( QTreeWidgetItem* item, QTreeWidgetItem*  );
+    void expantNode( QTreeWidgetItem* item, int );
 
     void createTreeItems( QTreeWidgetItem* item, const QStringList& childTextList );
     QString fullPathTo( QTreeWidgetItem* item );
     QPixmap icon( const QString& name );
+    int fileType( const QString& name ) const;
+
 private:
 
     QStringList whatsInFolder( const QString& folder );

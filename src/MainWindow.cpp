@@ -12,7 +12,13 @@
 #include "ui_MainWindow.h"
 //----------------------------------------
 enum CustomRoles {
-    LoadRole = Qt::UserRole + 1,
+    LoadRole    = Qt::UserRole + 1,
+    ItemTypeRole,
+};
+//----------------------------------------
+enum FileTypes {
+    File  ,
+    Folder,
 };
 //----------------------------------------
 
@@ -21,8 +27,10 @@ MainWindow::MainWindow( QWidget* parent ) : QMainWindow(parent), ui(new Ui::Main
     ui->setupUi(this);
 
     ui->treeWidget->setColumnCount( 1 );
+    ui->treeWidget->header()->hide();
 
     connect( ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::expantNode );
+    connect( ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::selectItem );
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -74,6 +82,7 @@ void MainWindow::createTreeItems( QTreeWidgetItem* item, const QStringList& name
         QTreeWidgetItem* newItem = new QTreeWidgetItem;
         newItem->setText( 0, name       );
         newItem->setIcon( 0, icon(name) );
+        newItem->setData( 0, ItemTypeRole, fileType(name) );
 
         items.append( newItem );
     }
@@ -106,8 +115,7 @@ QString MainWindow::fullPathTo( QTreeWidgetItem* item ) {
 
 QPixmap MainWindow::icon( const QString& name ) {
 
-    bool isFolder = name.indexOf('.') < 1;
-    if( isFolder ) {
+    if( fileType(name) == Folder ) {
         return QPixmap(":/folder.png");
     }
 
@@ -136,7 +144,40 @@ QPixmap MainWindow::icon( const QString& name ) {
 }
 //----------------------------------------------------------------------------------------------------------
 
+int MainWindow::fileType( const QString& name ) const {
+
+    return (name.indexOf('.') < 1) ? Folder : File;
+}
+//----------------------------------------------------------------------------------------------------------
+
+void MainWindow::selectItem( QTreeWidgetItem* item, QTreeWidgetItem* ) {
+
+    if( item->data(0, ItemTypeRole).toInt() != Folder ) {
+        return;
+    }
+
+    if( !item->data(0, LoadRole).isValid() ) {
+        expantNode( item, 0 );
+    }
+
+    ui->folderList->clear();
+
+    for( int i = 0; i < item->childCount(); i++ ) {
+
+        QTreeWidgetItem* childItem = item->child( i );
+
+        QListWidgetItem* listItem = new QListWidgetItem( ui->folderList );
+        listItem->setData( Qt::DisplayRole   , childItem->data(0, Qt::DisplayRole   ) );
+        listItem->setData( Qt::DecorationRole, childItem->data(0, Qt::DecorationRole) );
+    }
+}
+//----------------------------------------------------------------------------------------------------------
+
 void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
+
+    if( item->data(0, ItemTypeRole).toInt() != Folder ) {
+        return;
+    }
 
     if( item->data(0, LoadRole).isValid() ) {
         return;
@@ -147,6 +188,7 @@ void MainWindow::expantNode( QTreeWidgetItem* item, int ) {
     createTreeItems( item, names );
 
     item->setData( 0, LoadRole, true );
+    ui->treeWidget->expandItem( item );
 }
 //----------------------------------------------------------------------------------------------------------
 
