@@ -25,7 +25,22 @@ SettingsDialog::~SettingsDialog() {
 
 void SettingsDialog::selectBin() {
 
-    QString path = QFileDialog::getOpenFileName( this, "Программа TF", m_Config->binPath.isEmpty() ? "C:/" : m_Config->binPath, "*.exe" );
+    QString filter;
+    QString dir = m_Config->binPath;
+
+#ifdef WIN32
+    filter = "*.exe";
+#endif
+
+    if( dir.isEmpty() ) {
+#ifdef WIN32
+        dir = "C:/";
+#else
+        dir = QDir::homePath();
+#endif
+    }
+
+    QString path = QFileDialog::getOpenFileName( this, tr("Программа TF"), dir, filter );
     if( path.isEmpty() ) {
         return;
     }
@@ -43,9 +58,10 @@ void SettingsDialog::setConf( ConfigTFS* conf ) {
 
 void SettingsDialog::save() {
 
-    m_Config->binPath        = ui->binPathEdit->text();
-    m_Config->creds.login    = ui->loginEdit  ->text();
-    m_Config->creds.password = ui->passwordEdit->text();
+    m_Config->binPath        = ui->binPathEdit   ->text();
+    m_Config->collection     = ui->collectionEdit->text();
+    m_Config->creds.login    = ui->loginEdit     ->text();
+    m_Config->creds.password = ui->passwordEdit  ->text();
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -58,6 +74,9 @@ void SettingsDialog::restore() {
 
     // Путь к программе TF
     ui->binPathEdit->setText( m_Config->binPath );
+
+    // Asure DevOps Server
+    ui->collectionEdit->setText( m_Config->collection );
 
     // Аутентификация
     ui->loginEdit   ->setText( m_Config->creds.login    );

@@ -1,9 +1,11 @@
 //----------------------------------------
 #include <QTimer>
+#include <QScreen>
 #include <QSettings>
 #include <QProcess>
 #include <QTextCodec>
 #include <QTemporaryFile>
+#include <QGuiApplication>
 #include <QFileIconProvider>
 //----------------------------------------
 #include "SettingsDialog.h"
@@ -49,15 +51,26 @@ void MainWindow::checkTfsConnection() {
 
 QStringList MainWindow::whatsInFolder( const QString& folder ) {
 
-    QStringList args = { "dir", folder };
+#ifdef WIN32
+    QString separator = "\r\n";
+#else
+    QString separator = "\n";
+#endif
+
+    QStringList args = { "dir", QString("-collection:%1").arg(config.collection), folder };
 
     QProcess tfs_process;
-    tfs_process.setReadChannelMode(QProcess::MergedChannels);
+    tfs_process.setProcessChannelMode( QProcess::MergedChannels );
     tfs_process.start( config.binPath, args );
     tfs_process.waitForFinished();
 
     QByteArray tf_output = tfs_process.readAllStandardOutput();
-    QStringList subdirsList =QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split( "\r\n", Qt::SkipEmptyParts );
+    QStringList subdirsList =QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split( separator, Qt::SkipEmptyParts );
+
+    qDebug() << "exitCode  : " << tfs_process.exitCode();
+    qDebug() << "exitStatus: " << tfs_process.exitStatus();
+    qDebug() << subdirsList;
+
     subdirsList.removeLast();
 
     for( int i = 0; i < subdirsList.count(); i++ ) {
@@ -245,6 +258,12 @@ void MainWindow::saveConfig() {
 //----------------------------------------------------------------------------------------------------------
 
 void MainWindow::showEvent( QShowEvent* event ) {
+
+    QRect rect  = QGuiApplication::primaryScreen()->geometry();
+    QPoint center = rect.center();
+    center.setX( center.x() - (width ()/2) );
+    center.setY( center.y() - (height()/2) );
+    move(center);
 
     QMainWindow::showEvent( event );
     QTimer::singleShot( 0, this, &MainWindow::readConfig );
