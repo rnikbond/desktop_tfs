@@ -31,7 +31,7 @@ void ManagerTFS::cloneDir( const QString& dir ) {
                          dir,
                         "-recursive",
                          QString("-collection:%1").arg(config->collection),
-                         QString("-login:%1,%2"  ).arg(config->creds.login).arg(config->creds.password)
+                         QString("-login:%1,%2"  ).arg(config->creds.login, config->creds.password)
                        };
 
     execute( args );
@@ -48,7 +48,7 @@ void ManagerTFS::entriesDir( const QString& dir ) {
     clear();
 
     QStringList args = { "dir",
-                        QString("-login:%1,%2").arg(config->creds.login).arg(config->creds.password),
+                        QString("-login:%1,%2").arg(config->creds.login, config->creds.password),
                         QString("-collection:%1").arg(config->collection),
                         dir };
 
