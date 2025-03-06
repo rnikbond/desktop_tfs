@@ -8,6 +8,8 @@
 //----------------------------------------
 namespace Ui { class SettingsDialog; }
 //----------------------------------------
+class QListWidgetItem;
+//----------------------------------------
 
 class SettingsDialog : public QDialog {
 
@@ -24,16 +26,23 @@ public:
 
 private:
 
-    Ui::SettingsDialog* ui;
-
-private:
-
     void selectBin();
 
     void save   ();
     void restore();
 
     void changePasswordVisibility();
+
+private: // UI
+
+    Ui::SettingsDialog* ui;
+
+    void selectPage( QListWidgetItem* itemPage, QListWidgetItem* );
+    QListWidgetItem* findPage( int page ) const;
+
+    void initPages();
+    void initPageTFS();
+    void initPageWorkspace();
 };
 //----------------------------------------------------------------------------------------------------------
 

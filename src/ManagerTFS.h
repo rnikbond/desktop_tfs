@@ -31,6 +31,7 @@ public:
 
     void entriesDir( const QString& dir );
     void cloneDir  ( const QString& dir );
+    void workspaces();
 
 private:
 

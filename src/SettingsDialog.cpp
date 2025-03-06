@@ -3,6 +3,8 @@
 #include <QAction>
 #include <QFileDialog>
 //----------------------------------------
+#include "ManagerTFS.h"
+//----------------------------------------
 #include "SettingsDialog.h"
 #include "ui_SettingsDialog.h"
 //----------------------------------------
@@ -14,25 +16,28 @@
  #define EXAMPLE_TF_BIN "/home/user/TEE-CLC-xx.xxx.x/tf"
 #endif
 //----------------------------------------
+enum Pages {
+    PageTFS      , ///< Конфигурация TFS
+    PageWorkspace, ///< Рабочая область
+};
+//----------------------------------------
+enum {
+    PageRole = Qt::UserRole + 1,
+};
+//----------------------------------------
 
 SettingsDialog::SettingsDialog( QWidget* parent ) : QDialog(parent), ui(new Ui::SettingsDialog)
 {
-    ui->setupUi(this);
-    setWindowTitle( tr("Настройка") );
-
     m_Config = nullptr;
 
-    ui->binPathEdit   ->setPlaceholderText( EXAMPLE_TF_BIN );
-    ui->collectionEdit->setPlaceholderText("http://<hostname>:<port>/<collection>");
+    ui->setupUi(this);
+    ui->splitter->setSizes( {150, 500} );
+    setWindowTitle( tr("Настройка") );
 
-    QAction* viewPasswordAction = new QAction( QIcon(":/eye_open.png"), "");
-    ui->passwordEdit->addAction( viewPasswordAction, QLineEdit::TrailingPosition );
+    initPages();
+    ui->pagesList->setCurrentItem( findPage(PageTFS) );
 
-    changePasswordVisibility();
-
-    connect( ui->buttonBox     , &QDialogButtonBox::accepted , this, &SettingsDialog::save                     );
-    connect( ui->binPathButton , &QToolButton     ::clicked  , this, &SettingsDialog::selectBin                );
-    connect( viewPasswordAction, &QAction         ::triggered, this, &SettingsDialog::changePasswordVisibility );
+    connect( ui->buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::save  );
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -86,15 +91,39 @@ void SettingsDialog::restore() {
         return;
     }
 
-    // Путь к программе TF
-    ui->binPathEdit->setText( m_Config->binPath );
+    { // Страница "Конфигурация TFS"
 
-    // Asure DevOps Server
-    ui->collectionEdit->setText( m_Config->collection );
+        // Путь к программе TF
+        ui->binPathEdit->setText( m_Config->binPath );
 
-    // Аутентификация
-    ui->loginEdit   ->setText( m_Config->creds.login    );
-    ui->passwordEdit->setText( m_Config->creds.password );
+        // Asure DevOps Server
+        ui->collectionEdit->setText( m_Config->collection );
+
+        // Аутентификация
+        ui->loginEdit   ->setText( m_Config->creds.login    );
+        ui->passwordEdit->setText( m_Config->creds.password );
+    }
+
+    { // Страница "Рабочая область"
+
+        ManagerTFS tfs;
+        tfs.init( m_Config );
+
+        tfs.workspaces();
+
+        for( int i = 0; i < 3; i++ ) {
+            tfs.m_result.removeFirst();
+        }
+
+        foreach( QString workspaceInfo, tfs.m_result ) {
+
+            QString workspace = workspaceInfo.split("  ", Qt::SkipEmptyParts)[0];
+
+            QListWidgetItem* item = new QListWidgetItem( ui->workspacesList );
+            item->setText   ( workspace     );
+            item->setToolTip( workspaceInfo );
+        }
+    }
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -102,5 +131,77 @@ void SettingsDialog::setConf( ConfigTFS* conf ) {
 
     m_Config = conf;
     restore();
+}
+//----------------------------------------------------------------------------------------------------------
+
+QListWidgetItem* SettingsDialog::findPage( int page ) const {
+
+    for( int row = 0; row < ui->pagesList->count(); row++ ) {
+        QListWidgetItem* itemPage = ui->pagesList->item( row );
+        if( itemPage->data(PageRole).toInt() == page ) {
+            return itemPage;
+        }
+    }
+
+    return nullptr;
+}
+//----------------------------------------------------------------------------------------------------------
+
+void SettingsDialog::selectPage( QListWidgetItem* itemPage, QListWidgetItem* ) {
+
+    if( itemPage == nullptr ) {
+        return;
+    }
+
+    int page = itemPage->data(PageRole).toInt();
+    switch( page) {
+        case PageTFS      : ui->pagesStack->setCurrentWidget( ui->pageConfigTFS ); break;
+        case PageWorkspace: ui->pagesStack->setCurrentWidget( ui->pageWorkspace ); break;
+        default: {
+            qDebug() << "SettingsDialog::selectPage()" << QString("unknown page role: %1").arg(page);
+            break;
+        }
+    }
+}
+//----------------------------------------------------------------------------------------------------------
+
+void SettingsDialog::initPages() {
+
+    QListWidgetItem* itemPageTFS       = new QListWidgetItem;
+    QListWidgetItem* itemPageWorkspace = new QListWidgetItem;
+
+    itemPageTFS      ->setText( tr("Конфигурация TFS") );
+    itemPageWorkspace->setText( tr("Рабочая область" ) );
+
+    itemPageTFS      ->setData( PageRole, PageTFS       );
+    itemPageWorkspace->setData( PageRole, PageWorkspace );
+
+    ui->pagesList->addItem( itemPageTFS       );
+    ui->pagesList->addItem( itemPageWorkspace );
+
+    initPageTFS      ();
+    initPageWorkspace();
+
+    connect( ui->pagesList, &QListWidget::currentItemChanged, this, &SettingsDialog::selectPage );
+}
+//----------------------------------------------------------------------------------------------------------
+
+void SettingsDialog::initPageTFS() {
+
+    ui->binPathEdit   ->setPlaceholderText( EXAMPLE_TF_BIN );
+    ui->collectionEdit->setPlaceholderText("http://<hostname>:<port>/<collection>");
+
+    QAction* viewPasswordAction = new QAction( QIcon(":/eye_open.png"), "");
+    ui->passwordEdit->addAction( viewPasswordAction, QLineEdit::TrailingPosition );
+
+    changePasswordVisibility();
+
+    connect( ui->binPathButton , &QToolButton     ::clicked  , this, &SettingsDialog::selectBin                );
+    connect( viewPasswordAction, &QAction         ::triggered, this, &SettingsDialog::changePasswordVisibility );
+}
+//----------------------------------------------------------------------------------------------------------
+
+void SettingsDialog::initPageWorkspace() {
+
 }
 //----------------------------------------------------------------------------------------------------------

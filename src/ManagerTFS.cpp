@@ -35,11 +35,6 @@ void ManagerTFS::cloneDir( const QString& dir ) {
                        };
 
     execute( args );
-    if( m_error_code != 0 ) {
-        return;
-    }
-
-    qDebug() << m_result;
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -74,6 +69,20 @@ void ManagerTFS::entriesDir( const QString& dir ) {
             m_result[i] = m_result[i].remove("$");
         }
     }
+}
+//----------------------------------------------------------------------------------------------------------
+
+void ManagerTFS::workspaces() {
+
+    clear();
+
+    QStringList args = {
+                        "workspaces",
+                        QString("-login:%1,%2").arg(config->creds.login, config->creds.password),
+                        QString("-collection:%1").arg(config->collection),
+                       };
+
+    execute( args );
 }
 //----------------------------------------------------------------------------------------------------------
 
