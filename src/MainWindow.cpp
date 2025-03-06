@@ -1,4 +1,5 @@
 //----------------------------------------
+#include <QTime>
 #include <QTimer>
 #include <QScreen>
 #include <QToolBar>
@@ -61,7 +62,6 @@ void MainWindow::reloadTree() {
     appendOutput();
 
     if( m_TFS->m_error_code != 0 ) {
-        ui->logEdit->append( QString("%1: %2").arg(m_TFS->m_error_code).arg(m_TFS->m_error_text ) );
         QMessageBox::critical( this, tr("Ошибка"), m_TFS->m_error_text );
         return;
     }
@@ -233,6 +233,9 @@ int MainWindow::fileType( const QString& name ) const {
 //----------------------------------------------------------------------------------------------------------
 
 void MainWindow::appendOutput() {
+
+    ui->logEdit->append("");
+    ui->logEdit->append( QTime::currentTime().toString("hh:mm:ss.zzz") );
 
     if( m_TFS->m_error_code != 0 ) {
         QColor textColorSave = ui->logEdit->textColor();

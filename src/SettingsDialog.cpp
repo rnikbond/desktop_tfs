@@ -8,7 +8,7 @@
 //----------------------------------------
 #ifdef WIN32
  #define BIN_FILTER     "*.exe"
- #define EXAMPLE_TF_BIN "/home/user/TEE-CLC-xx.xxx.x/tf"
+ #define EXAMPLE_TF_BIN "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/Common7/IDE/CommonExtensions/Microsoft/TeamFoundation/Team Explorer/TF.exe"
 #else
  #define BIN_FILTER ""
  #define EXAMPLE_TF_BIN "/home/user/TEE-CLC-xx.xxx.x/tf"

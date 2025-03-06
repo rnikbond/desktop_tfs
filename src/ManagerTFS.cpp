@@ -30,8 +30,8 @@ void ManagerTFS::cloneDir( const QString& dir ) {
     QStringList args = { "get",
                          dir,
                         "-recursive",
-                         QString("-login:%1,%2"  ).arg(config->creds.login).arg(config->creds.password),
-                         QString("-collection:%1").arg(config->collection)
+                         QString("-collection:%1").arg(config->collection),
+                         QString("-login:%1,%2"  ).arg(config->creds.login).arg(config->creds.password)
                        };
 
     execute( args );
@@ -53,7 +53,12 @@ void ManagerTFS::entriesDir( const QString& dir ) {
                         dir };
 
     execute( args );
+
     if( m_error_code != 0 ) {
+        return;
+    }
+
+    if( m_result.isEmpty() ) {
         return;
     }
 
@@ -76,9 +81,27 @@ void ManagerTFS::execute( const QStringList& args ) {
 
     QProcess tfs_process;
     tfs_process.setProcessChannelMode( QProcess::MergedChannels );
+#ifndef WIN32
     tfs_process.setWorkingDirectory( "/home/rnb/work/mainline" );
+#endif
     tfs_process.start( config->binPath, args );
     tfs_process.waitForFinished();
+
+    switch( tfs_process.error() ) {
+        case QProcess::UnknownError: {
+            break;
+        }
+        case QProcess::FailedToStart: {
+            m_error_code = -1;
+            m_error_text = tr("Неверно указан путь к программе TF: %1").arg(config->binPath);
+            return;
+        }
+        default: {
+            m_error_code = tfs_process.error() * (-1);
+            m_error_text = tfs_process.errorString();
+            return;
+        }
+    }
 
     QByteArray tf_output = tfs_process.readAllStandardOutput();
     m_result = QTextCodec::codecForName("cp1251")->toUnicode(tf_output).split(SEP, Qt::SkipEmptyParts);
