@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>655</width>
-    <height>403</height>
+    <width>508</width>
+    <height>404</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <widget class="QSplitter" name="splitter">
      <property name="orientation">
@@ -25,22 +25,7 @@
        <number>0</number>
       </property>
       <widget class="QWidget" name="pageConfigTFS">
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
+       <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QGroupBox" name="binGBox">
           <property name="title">
@@ -61,44 +46,10 @@
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="serverGBox">
-          <property name="title">
-           <string>Asure DevOps Server</string>
+         <widget class="QPushButton" name="azureServerButton">
+          <property name="text">
+           <string>Подключение к Azure DevOps Server TFS</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout">
-           <item>
-            <widget class="QLineEdit" name="collectionEdit"/>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="authGBox">
-          <property name="title">
-           <string>Аутентификация</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout">
-           <item row="0" column="0">
-            <widget class="QLabel" name="loginLabel">
-             <property name="text">
-              <string>Логин</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="loginEdit"/>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="passwordLabel">
-             <property name="text">
-              <string>Пароль</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="passwordEdit"/>
-           </item>
-          </layout>
          </widget>
         </item>
         <item>
@@ -113,42 +64,6 @@
            </size>
           </property>
          </spacer>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="pageWorkspace">
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QLineEdit" name="workspaceEdit"/>
-          </item>
-          <item>
-           <widget class="QPushButton" name="createWorkspaceButton">
-            <property name="text">
-             <string>Создать</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QListWidget" name="workspacesList"/>
         </item>
        </layout>
       </widget>

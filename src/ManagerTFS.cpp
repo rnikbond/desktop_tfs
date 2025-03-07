@@ -23,6 +23,21 @@ void ManagerTFS::init( const ConfigTFS* cfg ) {
 }
 //----------------------------------------------------------------------------------------------------------
 
+void ManagerTFS::checkConnection() {
+
+    clear();
+
+    QStringList args = {
+                        "workfold",
+                        QString("-login:%1,%2"  ).arg(config->creds.login, config->creds.password),
+                        QString("-collection:%1").arg(config->azureUrl ),
+                        QString("-workspace:%1" ).arg(config->workspace),
+                       };
+
+    execute( args );
+}
+//----------------------------------------------------------------------------------------------------------
+
 void ManagerTFS::cloneDir( const QString& dir ) {
 
     clear();
@@ -30,7 +45,7 @@ void ManagerTFS::cloneDir( const QString& dir ) {
     QStringList args = { "get",
                          dir,
                         "-recursive",
-                         QString("-collection:%1").arg(config->collection),
+                         QString("-collection:%1").arg(config->azureUrl),
                          QString("-login:%1,%2"  ).arg(config->creds.login, config->creds.password)
                        };
 
@@ -44,7 +59,7 @@ void ManagerTFS::entriesDir( const QString& dir ) {
 
     QStringList args = { "dir",
                         QString("-login:%1,%2").arg(config->creds.login, config->creds.password),
-                        QString("-collection:%1").arg(config->collection),
+                        QString("-collection:%1").arg(config->azureUrl),
                         dir };
 
     execute( args );
@@ -79,7 +94,23 @@ void ManagerTFS::workspaces() {
     QStringList args = {
                         "workspaces",
                         QString("-login:%1,%2").arg(config->creds.login, config->creds.password),
-                        QString("-collection:%1").arg(config->collection),
+                        QString("-collection:%1").arg(config->azureUrl),
+                       };
+
+    execute( args );
+}
+//----------------------------------------------------------------------------------------------------------
+
+void ManagerTFS::createWorkspace( const QString& name ) {
+
+    clear();
+
+    QStringList args = {
+                        "workspace",
+                        "-new",
+                        name,
+                        QString("-login:%1,%2"  ).arg(config->creds.login, config->creds.password),
+                        QString("-collection:%1").arg(config->azureUrl),
                        };
 
     execute( args );

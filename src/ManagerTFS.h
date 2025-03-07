@@ -29,9 +29,11 @@ public:
 
 public:
 
+    void checkConnection();
     void entriesDir( const QString& dir );
     void cloneDir  ( const QString& dir );
     void workspaces();
+    void createWorkspace( const QString& name );
 
 private:
 

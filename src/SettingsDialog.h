@@ -15,7 +15,7 @@ class SettingsDialog : public QDialog {
 
     Q_OBJECT
 
-    ConfigTFS* m_Config;
+    Ui::SettingsDialog* ui;
 
 public:
 
@@ -24,25 +24,29 @@ public:
 
     void setConf( ConfigTFS* conf );
 
-private:
+private: // Config
 
-    void selectBin();
+    ConfigTFS* m_Config;
 
     void save   ();
     void restore();
 
-    void changePasswordVisibility();
+private: // Pages
 
-private: // UI
-
-    Ui::SettingsDialog* ui;
+    void initPages();
 
     void selectPage( QListWidgetItem* itemPage, QListWidgetItem* );
     QListWidgetItem* findPage( int page ) const;
 
-    void initPages();
-    void initPageTFS();
-    void initPageWorkspace();
+private: // Page config
+
+    void initPageConfig   ();
+    void savePageConfig   ();
+    void restorePageConfig();
+    void updatePageConfig ();
+
+    void selectBin();
+    void showAzureSettings();
 };
 //----------------------------------------------------------------------------------------------------------
 

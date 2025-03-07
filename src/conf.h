@@ -23,7 +23,7 @@ struct Credentials {
 
 struct ConfigTFS {
     QString     binPath   ;
-    QString     collection;
+    QString     azureUrl  ;
     QString     workspace ;
     QString     workfold  ;
     Credentials creds     ;
@@ -31,7 +31,7 @@ struct ConfigTFS {
     ConfigTFS() {}
     ConfigTFS( const ConfigTFS& other ) {
         binPath        = other.binPath       ;
-        collection     = other.collection    ;
+        azureUrl       = other.azureUrl      ;
         workspace      = other.workspace     ;
         workfold       = other.workfold      ;
         creds.login    = other.creds.login   ;
@@ -40,7 +40,7 @@ struct ConfigTFS {
 
     bool isValid() {
         return !binPath       .isEmpty() &&
-               !collection    .isEmpty() &&
+               !azureUrl      .isEmpty() &&
                !workspace     .isEmpty() &&
                !workfold      .isEmpty() &&
                !creds.login   .isEmpty() &&
@@ -50,7 +50,7 @@ struct ConfigTFS {
     void print() {
         qDebug() << "-------------------";
         qDebug() << "binPath       : " << binPath       ;
-        qDebug() << "collection    : " << collection    ;
+        qDebug() << "collection    : " << azureUrl      ;
         qDebug() << "workspace     : " << workspace     ;
         qDebug() << "workfold      : " << workfold      ;
         qDebug() << "creds.login   : " << creds.login   ;
@@ -60,7 +60,7 @@ struct ConfigTFS {
 
     void operator = (const ConfigTFS& other) {
         binPath        = other.binPath       ;
-        collection     = other.collection    ;
+        azureUrl       = other.azureUrl      ;
         workspace      = other.workspace     ;
         workfold       = other.workfold      ;
         creds.login    = other.creds.login   ;

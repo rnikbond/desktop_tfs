@@ -162,7 +162,7 @@ void MainWindow::readConfig() {
 
     conf.beginGroup( CONF_GROUP_TFS );
     config.binPath     = conf.value( CONF_BIN       , "" ).toString();
-    config.collection  = conf.value( CONF_COLLECTION, "" ).toString();
+    config.azureUrl    = conf.value( CONF_COLLECTION, "" ).toString();
     config.workspace   = conf.value( CONF_WORKSPACE , "" ).toString();
     config.workfold    = conf.value( CONF_WORKFOLD  , "" ).toString();
     conf.endGroup();
@@ -183,7 +183,7 @@ void MainWindow::saveConfig() {
 
     conf.beginGroup( CONF_GROUP_TFS );
     conf.setValue( CONF_BIN       , config.binPath    );
-    conf.setValue( CONF_COLLECTION, config.collection );
+    conf.setValue( CONF_COLLECTION, config.azureUrl   );
     conf.setValue( CONF_WORKSPACE , config.workspace  );
     conf.setValue( CONF_WORKFOLD  , config.workfold   );
     conf.endGroup();
