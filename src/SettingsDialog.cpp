@@ -18,8 +18,6 @@ enum {
 
 SettingsDialog::SettingsDialog( QWidget* parent ) : QDialog(parent), ui(new Ui::SettingsDialog)
 {
-    m_Config = nullptr;
-
     ui->setupUi(this);
     ui->splitter->setSizes( {150, 500} );
     setWindowTitle( tr("Настройка") );
@@ -44,21 +42,21 @@ void SettingsDialog::save() {
 
 void SettingsDialog::restore() {
 
-    if( m_Config == nullptr ) {
-        qWarning() << "SettingsDialog::restore()" << "config is nullptr";
-        return;
-    }
-
     restorePageConfig();
 }
 //----------------------------------------------------------------------------------------------------------
 
-void SettingsDialog::setConf( ConfigTFS* conf ) {
+void SettingsDialog::setConfiguration( const Configuration& cfg ) {
 
-    m_Config = conf;
+    config = cfg;
     restore();
 
     ui->pagesList->setCurrentItem( findPage(PageTFS) );
+}
+//----------------------------------------------------------------------------------------------------------
+
+const Configuration& SettingsDialog::configuration() const {
+    return config;
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -85,7 +83,6 @@ void SettingsDialog::selectPage( QListWidgetItem* itemPage, QListWidgetItem* ) {
     switch( page) {
         case PageTFS: {
             ui->pagesStack->setCurrentWidget( ui->pageConfigTFS );
-            updatePageConfig();
             break;
         }
         default: {

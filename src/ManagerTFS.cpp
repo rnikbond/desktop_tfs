@@ -11,15 +11,27 @@
 #endif
 //----------------------------------------
 
-ManagerTFS::ManagerTFS( QObject* parent  ) : QObject(parent)
-{
-    config = nullptr;
+ManagerTFS::ManagerTFS( QObject* parent  ) : QObject(parent) { }
+//----------------------------------------------------------------------------------------------------------
+
+void ManagerTFS::setConfiguration( const Configuration& cfg ) {
+    config = cfg;
 }
 //----------------------------------------------------------------------------------------------------------
 
-void ManagerTFS::init( const ConfigTFS* cfg ) {
+void ManagerTFS::status( const QString& dir ) {
 
-    config = cfg;
+    clear();
+
+    QStringList args = {
+                        "status",
+                        "-recursive",
+                        //"-format:Detailed", // Детальная информация по изменениям
+                        "-nodetect", // Отключает отображение новых файлов
+                        dir
+                       };
+
+    execute( args );
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -29,9 +41,9 @@ void ManagerTFS::checkConnection() {
 
     QStringList args = {
                         "workfold",
-                        QString("-login:%1,%2"  ).arg(config->creds.login, config->creds.password),
-                        QString("-collection:%1").arg(config->azureUrl ),
-                        QString("-workspace:%1" ).arg(config->workspace),
+                        QString("-login:%1,%2"  ).arg(config.Azure.login, config.Azure.password),
+                        QString("-collection:%1").arg(config.Azure.url ),
+                        QString("-workspace:%1" ).arg(config.Azure.workspace),
                        };
 
     execute( args );
@@ -45,8 +57,8 @@ void ManagerTFS::cloneDir( const QString& dir ) {
     QStringList args = { "get",
                          dir,
                         "-recursive",
-                         QString("-collection:%1").arg(config->azureUrl),
-                         QString("-login:%1,%2"  ).arg(config->creds.login, config->creds.password)
+                         QString("-collection:%1").arg(config.Azure.url),
+                         QString("-login:%1,%2"  ).arg(config.Azure.login, config.Azure.password)
                        };
 
     execute( args );
@@ -58,8 +70,8 @@ void ManagerTFS::entriesDir( const QString& dir ) {
     clear();
 
     QStringList args = { "dir",
-                        QString("-login:%1,%2").arg(config->creds.login, config->creds.password),
-                        QString("-collection:%1").arg(config->azureUrl),
+                        QString("-login:%1,%2"  ).arg(config.Azure.login, config.Azure.password),
+                        QString("-collection:%1").arg(config.Azure.url),
                         dir };
 
     execute( args );
@@ -93,8 +105,23 @@ void ManagerTFS::workspaces() {
 
     QStringList args = {
                         "workspaces",
-                        QString("-login:%1,%2").arg(config->creds.login, config->creds.password),
-                        QString("-collection:%1").arg(config->azureUrl),
+                        QString("-login:%1,%2"  ).arg(config.Azure.login, config.Azure.password),
+                        QString("-collection:%1").arg(config.Azure.url),
+                       };
+
+    execute( args );
+}
+//----------------------------------------------------------------------------------------------------------
+
+void ManagerTFS::workfolds() {
+
+    clear();
+
+    QStringList args = {
+                        "workfold",
+                        QString("-workspace:%1" ).arg(config.Azure.workspace),
+                        QString("-collection:%1").arg(config.Azure.url),
+                        QString("-login:%1,%2"  ).arg(config.Azure.login, config.Azure.password),
                        };
 
     execute( args );
@@ -109,8 +136,8 @@ void ManagerTFS::createWorkspace( const QString& name ) {
                         "workspace",
                         "-new",
                         name,
-                        QString("-login:%1,%2"  ).arg(config->creds.login, config->creds.password),
-                        QString("-collection:%1").arg(config->azureUrl),
+                        QString("-login:%1,%2"  ).arg(config.Azure.login, config.Azure.password),
+                        QString("-collection:%1").arg(config.Azure.url),
                        };
 
     execute( args );
@@ -124,7 +151,7 @@ void ManagerTFS::execute( const QStringList& args ) {
 #ifndef WIN32
     tfs_process.setWorkingDirectory( "/home/rnb/work/mainline" );
 #endif
-    tfs_process.start( config->binPath, args );
+    tfs_process.start( config.Azure.tfPath, args );
     tfs_process.waitForFinished();
 
     switch( tfs_process.error() ) {
@@ -133,7 +160,7 @@ void ManagerTFS::execute( const QStringList& args ) {
         }
         case QProcess::FailedToStart: {
             m_error_code = -1;
-            m_error_text = tr("Неверно указан путь к программе TF: %1").arg(config->binPath);
+            m_error_text = tr("Неверно указан путь к программе TF: %1").arg(config.Azure.tfPath);
             return;
         }
         default: {

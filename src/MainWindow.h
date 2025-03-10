@@ -28,13 +28,18 @@ private: // init
 
 private: // TFS
 
-    ManagerTFS* m_TFS;
-
+    void reloadWorkfolds();
     void cloneCurrent();
+    void reloadStatus();
+    void initChanges();
+
+    void addEdit( const QString& file, const QString& path, int tfsFlag );
+
+    QMap<QString, QTreeWidgetItem*> statusDirs;
 
 private: // Config
 
-    ConfigTFS config;
+    Configuration config;
 
     void readConfig();
     void saveConfig();
@@ -58,7 +63,7 @@ private: // UI
     Ui::MainWindow* ui;
 
     void createToolBar();
-    void appendOutput ();
+    void appendOutput ( const ManagerTFS& tfs );
 
 protected:
 

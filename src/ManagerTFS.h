@@ -11,7 +11,7 @@ class ManagerTFS : public QObject {
 
     Q_OBJECT
 
-    const ConfigTFS* config;
+    Configuration config;
 
 public:
 
@@ -24,7 +24,7 @@ public:
 
     ManagerTFS( QObject* parent = nullptr );
 
-    void init( const ConfigTFS* cfg );
+    void setConfiguration( const Configuration& cfg  );
     void clear();
 
 public:
@@ -33,7 +33,9 @@ public:
     void entriesDir( const QString& dir );
     void cloneDir  ( const QString& dir );
     void workspaces();
+    void workfolds();
     void createWorkspace( const QString& name );
+    void status( const QString& dir );
 
 private:
 

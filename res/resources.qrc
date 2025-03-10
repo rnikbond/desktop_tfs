@@ -9,5 +9,11 @@
         <file>customizing.png</file>
         <file>add.png</file>
         <file>remove.png</file>
+        <file>apply.png</file>
+        <file>folder-share.png</file>
+        <file>refresh.png</file>
+        <file>resources.qrc</file>
+        <file>settings_update.png</file>
+        <file>updated.png</file>
     </qresource>
 </RCC>
